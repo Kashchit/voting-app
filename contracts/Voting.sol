@@ -11,38 +11,49 @@ contract Voting {
 
     Candidate[] public candidates;
     mapping(address => bool) public hasVoted;
-    address public owner;
-
-    event Voted(address indexed voter, uint candidateIndex);
 
     constructor(string[] memory _candidateNames) {
-        owner = msg.sender;
-        console.log("Contract deployed by:", owner);
-
         for (uint i = 0; i < _candidateNames.length; i++) {
-            candidates.push(Candidate({ name: _candidateNames[i], voteCount: 0 }));
-            console.log("Candidate added:", _candidateNames[i]);
+            candidates.push(Candidate({
+                name: _candidateNames[i],
+                voteCount: 0
+            }));
         }
     }
 
-    function vote(uint candidateIndex) external {
-        console.log("Voter address:", msg.sender);
-        console.log("Voting for candidate index:", candidateIndex);
+    function vote(uint candidateIndex) public {
+        require(!hasVoted[msg.sender], "You have already voted!");
+        require(candidateIndex < candidates.length, "Invalid candidate index!");
 
-        require(!hasVoted[msg.sender], "You have already voted");
-        require(candidateIndex < candidates.length, "Invalid candidate");
-
-        candidates[candidateIndex].voteCount++;
         hasVoted[msg.sender] = true;
+        candidates[candidateIndex].voteCount++;
 
-        console.log("Vote registered for:", candidates[candidateIndex].name);
-        console.log("Total votes for", candidates[candidateIndex].name, ":", candidates[candidateIndex].voteCount);
-
-        emit Voted(msg.sender, candidateIndex);
+        console.log("Voter %s voted for %s", msg.sender, candidates[candidateIndex].name);
     }
 
-    function getCandidates() external view returns (Candidate[] memory) {
-        console.log("Fetching candidate list");
+    function getWinner() public view returns (string memory) {
+        uint maxVotes = 0;
+        string memory winnerName = "";
+        bool tie = false;
+
+        for (uint i = 0; i < candidates.length; i++) {
+            if (candidates[i].voteCount > maxVotes) {
+                maxVotes = candidates[i].voteCount;
+                winnerName = candidates[i].name;
+                tie = false;
+            } else if (candidates[i].voteCount == maxVotes) {
+                tie = true;
+            }
+        }
+
+        if (tie) {
+            return "It's a tie!";
+        }
+        
+        return winnerName;
+    }
+
+    function getAllVotes() public view returns (Candidate[] memory) {
         return candidates;
     }
 }
